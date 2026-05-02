@@ -1,0 +1,83 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+
+# load dataset
+df = pd.read_csv("C:\\Users\\acer21\\Downloads\\AmesHousing.csv")
+
+# fill missing values
+df = df.fillna(df.mean(numeric_only=True))
+
+# convert price into categories
+df['Price_Category'] = pd.cut(df['SalePrice'], bins=3, labels=[0,1,2])
+
+# select only numeric features
+df_model = df.select_dtypes(include=['int64', 'float64'])
+
+# drop target column
+df_model = df_model.drop(columns=['SalePrice'])
+
+X = df_model
+y = df['Price_Category']
+
+# split data
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# scale data
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# models
+lr = LogisticRegression(max_iter=1000)
+dt = DecisionTreeClassifier()
+rf = RandomForestClassifier()
+
+# train models
+lr.fit(X_train, y_train)
+dt.fit(X_train, y_train)
+rf.fit(X_train, y_train)
+
+# predictions
+lr_pred = lr.predict(X_test)
+dt_pred = dt.predict(X_test)
+rf_pred = rf.predict(X_test)
+
+# evaluation function
+def evaluate(y_test, pred):
+    print("Accuracy:", accuracy_score(y_test, pred))
+    print("Precision:", precision_score(y_test, pred, average='macro'))
+    print("Recall:", recall_score(y_test, pred, average='macro'))
+    print("F1:", f1_score(y_test, pred, average='macro'))
+    print("-----")
+
+# results
+print("Logistic Regression")
+evaluate(y_test, lr_pred)
+
+print("Decision Tree")
+evaluate(y_test, dt_pred)
+
+print("Random Forest")
+evaluate(y_test, rf_pred)
+
+# confusion matrix for random forest
+plt.figure(figsize=(8,6))
+sns.heatmap(confusion_matrix(y_test, rf_pred), annot=True, fmt='d', cmap='Blues')
+plt.title('Random Forest - Confusion Matrix')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.show()
